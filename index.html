@@ -380,7 +380,34 @@ async function createClassCode(){
   }
 
   status.className = 'save-status';
-  status.textContent = 'Generating class code...';
+  status.textContent = 'Checking existing class code...';
+
+  const { data: existingClass, error: lookupError } = await supabaseClient
+    .from('classes')
+    .select('class_code, teacher_name, period, class_name')
+    .eq('teacher_name', teacherName)
+    .eq('period', period)
+    .maybeSingle();
+
+  if(lookupError){
+    console.error(lookupError);
+    status.className = 'save-status bad';
+    status.textContent = 'Error checking existing class code.';
+    return;
+  }
+
+  if(existingClass){
+    status.className = 'save-status good';
+    status.innerHTML = `
+      Existing Class Code Found:<br>
+      <span style="font-size:2rem;color:var(--correct);font-family:'Fredoka One'">${existingClass.class_code}</span><br>
+      Teacher: ${existingClass.teacher_name}<br>
+      Period: ${existingClass.period}
+    `;
+    return;
+  }
+
+  status.textContent = 'Generating new class code...';
 
   const code = await createUniqueClassCode();
 
@@ -403,8 +430,10 @@ async function createClassCode(){
 
   status.className = 'save-status good';
   status.innerHTML = `
-    Class Code Created Successfully:<br>
+    New Class Code Created:<br>
     <span style="font-size:2rem;color:var(--correct);font-family:'Fredoka One'">${code}</span><br>
+    Teacher: ${teacherName}<br>
+    Period: ${period}<br>
     Give this code to your students.
   `;
 }
