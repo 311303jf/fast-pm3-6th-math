@@ -21,6 +21,9 @@ Created by Joany Figueredo · Math Teacher · Miami-Dade County Public Schools
 <input id="classCode" placeholder="Class Code">
 </div>
 <div class="student-actions"><button class="smallbtn" onclick="saveStudentInfo()">Save Info / Start Ready</button><button class="smallbtn secondary" onclick="clearStudentInfo()">Clear</button><span id="studentStatus" class="sub"></span></div></div></div>
+<div class="student-actions" style="margin-top:14px">
+  <button class="smallbtn secondary" onclick="openTeacherPanel()">👩‍🏫 Teacher/Admin Panel</button>
+</div> 
 <div class="section-title">Standard Practice</div><div class="grid">
 <div class="card" style="--c:var(--nso)" onclick="startQuiz('standard',0)"><div class="icon">🔢</div><span class="tag">30 Questions</span><h3>Standard NSO</h3><p>Number sense, integers, absolute value, GCF, LCM, rates, ratios, decimals, and percentages.</p><div class="topics"><span class="topic">Integers</span><span class="topic">Rates</span><span class="topic">Percent</span></div><button class="btn">Start NSO →</button></div>
 <div class="card" style="--c:var(--ar)" onclick="startQuiz('standard',1)"><div class="icon">📐</div><span class="tag">30 Questions</span><h3>Standard AR</h3><p>Expressions, equations, inequalities, variables, and basic real-world equations.</p><div class="topics"><span class="topic">Equations</span><span class="topic">Expressions</span><span class="topic">Inequalities</span></div><button class="btn">Start AR →</button></div>
@@ -32,7 +35,31 @@ Created by Joany Figueredo · Math Teacher · Miami-Dade County Public Schools
 <div class="section-title">Mock Tests</div><div class="fullrow">
 <div class="card" style="--c:var(--full);min-height:190px" onclick="startMock('standard')"><div class="icon">🏆</div><span class="tag">60 Questions</span><h3>Standard Mock Test</h3><p>20 questions from each standard domain. Good for PM3 simulation practice.</p><button class="btn">Start Standard Mock →</button></div>
 <div class="card" style="--c:#ef4444;min-height:190px" onclick="startMock('advanced')"><div class="icon">🔥</div><span class="tag">60 Questions</span><h3>Advanced Mock Test</h3><p>20 advanced questions from each domain. Higher complexity, stronger test preparation.</p><button class="btn">Start Advanced Mock →</button></div></div></div>
-<div id="quiz" class="screen"><div class="quiz-head"><button class="back" onclick="goHome()">← Home</button><div class="qtitle" id="qtitle">Quiz</div><div class="counter" id="counter">1 / 30</div></div><div class="prog"><div class="progfill" id="progfill"></div></div><div class="body"><div class="dots" id="dots"></div><div class="qcard"><div class="meta" id="meta"></div><div class="qtext" id="qtext"></div><div class="hint" id="hint"></div></div><div class="choices" id="choices"></div><div class="fb" id="fb"><strong id="fbtitle"></strong><span id="fbtext"></span></div><div class="nav"><div id="live" style="color:var(--muted);font-weight:900">Score: 0/0</div><button class="next" id="next" onclick="nextQuestion()" disabled>Next →</button></div></div></div>
+<div id="teacherPanel" class="screen">
+  <div class="quiz-head">
+    <button class="back" onclick="goHome()">← Home</button>
+    <div class="qtitle">Teacher/Admin Panel</div>
+  </div>
+
+  <div class="body">
+    <div class="qcard">
+      <div class="meta">Create Class Code</div>
+
+      <div class="student-grid">
+        <input id="teacherName" placeholder="Teacher Name">
+        <input id="teacherPeriod" placeholder="Period">
+        <input id="teacherClassName" placeholder="Class Name Optional">
+      </div>
+
+      <div class="student-actions">
+        <button class="smallbtn" onclick="createClassCode()">Generate 6-Letter Class Code</button>
+      </div>
+
+      <div id="classCodeStatus" class="save-status"></div>
+    </div>
+  </div>
+</div>
+ <div id="quiz" class="screen"><div class="quiz-head"><button class="back" onclick="goHome()">← Home</button><div class="qtitle" id="qtitle">Quiz</div><div class="counter" id="counter">1 / 30</div></div><div class="prog"><div class="progfill" id="progfill"></div></div><div class="body"><div class="dots" id="dots"></div><div class="qcard"><div class="meta" id="meta"></div><div class="qtext" id="qtext"></div><div class="hint" id="hint"></div></div><div class="choices" id="choices"></div><div class="fb" id="fb"><strong id="fbtitle"></strong><span id="fbtext"></span></div><div class="nav"><div id="live" style="color:var(--muted);font-weight:900">Score: 0/0</div><button class="next" id="next" onclick="nextQuestion()" disabled>Next →</button></div></div></div>
 <div id="results" class="screen"><div class="results"><div style="font-size:5rem" id="emoji">🏆</div><h1 id="rtitle" style="font-family:'Fredoka One';font-size:2.4rem">Results</h1><div class="big" id="bigscore">0%</div><p class="sub" id="rsub"></p><div class="break" id="breakdown"></div><div class="qcard" id="message"></div><div id="saveStatus" class="save-status"></div><button class="next" onclick="goHome()">🏠 Back to Home</button><button class="next" onclick="retryQuiz()" style="background:#64748b;margin-left:8px">🔄 Try Again</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>  
 <script>
@@ -288,6 +315,98 @@ function clearStudentInfo(){
     status.textContent = 'Student information cleared.';
   }
 }
+function openTeacherPanel(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('teacherPanel').classList.add('active');
+}
 
+function generateSixLetterCode(){
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let code = '';
+
+  for(let i = 0; i < 6; i++){
+    code += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+
+  return code;
+}
+
+async function classCodeExists(code){
+  const { data, error } = await supabaseClient
+    .from('classes')
+    .select('class_code')
+    .eq('class_code', code)
+    .maybeSingle();
+
+  if(error){
+    console.error(error);
+    return true;
+  }
+
+  return !!data;
+}
+
+async function createUniqueClassCode(){
+  let code = generateSixLetterCode();
+  let attempts = 0;
+
+  while(await classCodeExists(code) && attempts < 10){
+    code = generateSixLetterCode();
+    attempts++;
+  }
+
+  return code;
+}
+
+async function createClassCode(){
+  const status = document.getElementById('classCodeStatus');
+
+  const teacherName = (
+    document.getElementById('teacherName')?.value || ''
+  ).trim();
+
+  const period = (
+    document.getElementById('teacherPeriod')?.value || ''
+  ).trim();
+
+  const className = (
+    document.getElementById('teacherClassName')?.value || ''
+  ).trim();
+
+  if(!teacherName || !period){
+    status.className = 'save-status bad';
+    status.textContent = 'Please enter Teacher Name and Period.';
+    return;
+  }
+
+  status.className = 'save-status';
+  status.textContent = 'Generating class code...';
+
+  const code = await createUniqueClassCode();
+
+  const { error } = await supabaseClient
+    .from('classes')
+    .insert([{
+      class_code: code,
+      teacher_name: teacherName,
+      period: period,
+      class_name: className || null,
+      active: true
+    }]);
+
+  if(error){
+    console.error(error);
+    status.className = 'save-status bad';
+    status.textContent = 'Error creating class code.';
+    return;
+  }
+
+  status.className = 'save-status good';
+  status.innerHTML = `
+    Class Code Created Successfully:<br>
+    <span style="font-size:2rem;color:var(--correct);font-family:'Fredoka One'">${code}</span><br>
+    Give this code to your students.
+  `;
+}
 window.addEventListener('load',loadStudentInfo);
 </script></body></html>
