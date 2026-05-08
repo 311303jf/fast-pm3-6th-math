@@ -18,11 +18,19 @@
 Created by Joany Figueredo · Math Teacher · Miami-Dade County Public Schools
 </p><div class="badgebar"><span class="badge">✅ 30 questions per domain</span><span class="badge">🔥 Advanced by domain</span><span class="badge">🏆 60-question mock tests</span></div></div>
 <div class="student-panel"><div class="student-box"><b>Student Information Required</b><p class="sub" style="margin-top:4px">Students must enter this information before starting. Nothing is sent yet; results are saved only after they finish the test.</p>
- <div class="student-grid">
-<input id="firstName" placeholder="First Name">
-<input id="lastName" placeholder="Last Name">
-<input id="studentId" placeholder="Student ID">
-<input id="classCode" placeholder="Class Code">
+<div class="student-grid">
+  <input id="classCode" placeholder="Class Code">
+</div>
+
+<div class="student-actions">
+  <button class="smallbtn" onclick="validateClassCode()">Validate Class Code</button>
+  <span id="classCodeCheckStatus" class="sub"></span>
+</div>
+
+<div class="student-grid" style="margin-top:12px">
+  <input id="firstName" placeholder="First Name" disabled>
+  <input id="lastName" placeholder="Last Name" disabled>
+  <input id="studentId" placeholder="Student ID" disabled>
 </div>
 <div class="student-actions"><button class="smallbtn" onclick="saveStudentInfo()">Save Info / Start Ready</button><button class="smallbtn secondary" onclick="clearStudentInfo()">Clear</button><span id="studentStatus" class="sub"></span></div></div></div>
  
@@ -209,6 +217,13 @@ function saveStudentInfo(){
   const status = document.getElementById('studentStatus');
 
   const studentId = normalizeStudentId(rawStudentId);
+  if(!verifiedClassCode || classCode !== verifiedClassCode){
+  if(status){
+    status.style.color='var(--wrong)';
+    status.textContent='Please validate your Class Code before starting.';
+  }
+  return false;
+}
 
   if(!firstName || !lastName || !rawStudentId || !classCode){
 
@@ -476,5 +491,57 @@ const period = `Period-${periodNumber}`;
 
   renderTeacherSessionCodes();
 }
+let verifiedClassCode = null;
+
+async function validateClassCode(){
+  const rawCode = (
+    document.getElementById('classCode')?.value || ''
+  ).trim().toUpperCase();
+
+  const status = document.getElementById('classCodeCheckStatus');
+
+  if(!rawCode){
+    status.style.color = 'var(--wrong)';
+    status.textContent = 'Please enter a class code.';
+    return false;
+  }
+
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Checking class code...';
+
+  const { data, error } = await supabaseClient
+    .from('classes')
+    .select('class_code, teacher_name, period, active')
+    .eq('class_code', rawCode)
+    .eq('active', true)
+    .limit(1);
+
+  if(error){
+    console.error(error);
+    status.style.color = 'var(--wrong)';
+    status.textContent = 'Error checking class code.';
+    return false;
+  }
+
+  if(!data || data.length === 0){
+    verifiedClassCode = null;
+    status.style.color = 'var(--wrong)';
+    status.textContent = 'Invalid class code. Please check with your teacher.';
+    return false;
+  }
+
+  verifiedClassCode = rawCode;
+
+  document.getElementById('classCode').value = rawCode;
+  document.getElementById('firstName').disabled = false;
+  document.getElementById('lastName').disabled = false;
+  document.getElementById('studentId').disabled = false;
+
+  status.style.color = 'var(--correct)';
+  status.textContent =
+    `Class verified: ${data[0].teacher_name} · ${data[0].period}`;
+
+  return true;
+}  
 window.addEventListener('load',loadStudentInfo);
 </script></body></html>
