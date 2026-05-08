@@ -56,6 +56,7 @@ Created by Joany Figueredo · Math Teacher · Miami-Dade County Public Schools
       </div>
 
       <div id="classCodeStatus" class="save-status"></div>
+     <div id="teacherSessionCodes"></div>
     </div>
   </div>
 </div>
@@ -358,20 +359,35 @@ async function createUniqueClassCode(){
   return code;
 }
 
+let teacherSessionCodes = [];
+
+function renderTeacherSessionCodes(){
+  const box = document.getElementById('teacherSessionCodes');
+  if(!box) return;
+
+  if(teacherSessionCodes.length === 0){
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="qcard" style="margin-top:18px">
+      <div class="meta">Codes Created / Found This Session</div>
+      ${teacherSessionCodes.map(c => `
+        <div style="margin:8px 0;padding:10px;border-radius:10px;background:var(--card2)">
+          <b>${c.code}</b> · ${c.teacher} · Period ${c.period}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 async function createClassCode(){
   const status = document.getElementById('classCodeStatus');
 
-  const teacherName = (
-    document.getElementById('teacherName')?.value || ''
-  ).trim();
-
-  const period = (
-    document.getElementById('teacherPeriod')?.value || ''
-  ).trim();
-
-  const className = (
-    document.getElementById('teacherClassName')?.value || ''
-  ).trim();
+  const teacherName = (document.getElementById('teacherName')?.value || '').trim();
+  const period = (document.getElementById('teacherPeriod')?.value || '').trim();
+  const className = (document.getElementById('teacherClassName')?.value || '').trim();
 
   if(!teacherName || !period){
     status.className = 'save-status bad';
@@ -380,34 +396,42 @@ async function createClassCode(){
   }
 
   status.className = 'save-status';
-  status.textContent = 'Checking existing class code...';
+  status.textContent = 'Checking class code...';
 
-  const { data: existingClass, error: lookupError } = await supabaseClient
+  const { data: existingClasses, error: lookupError } = await supabaseClient
     .from('classes')
     .select('class_code, teacher_name, period, class_name')
     .eq('teacher_name', teacherName)
     .eq('period', period)
-    .maybeSingle();
+    .limit(1);
 
   if(lookupError){
     console.error(lookupError);
     status.className = 'save-status bad';
-    status.textContent = 'Error checking existing class code.';
+    status.textContent = 'Could not check class code. Please try again.';
     return;
   }
 
-  if(existingClass){
+  if(existingClasses && existingClasses.length > 0){
+    const existingClass = existingClasses[0];
+
     status.className = 'save-status good';
     status.innerHTML = `
-      Existing Class Code Found:<br>
+      Existing Class Code:<br>
       <span style="font-size:2rem;color:var(--correct);font-family:'Fredoka One'">${existingClass.class_code}</span><br>
       Teacher: ${existingClass.teacher_name}<br>
       Period: ${existingClass.period}
     `;
+
+    teacherSessionCodes.push({
+      code: existingClass.class_code,
+      teacher: existingClass.teacher_name,
+      period: existingClass.period
+    });
+
+    renderTeacherSessionCodes();
     return;
   }
-
-  status.textContent = 'Generating new class code...';
 
   const code = await createUniqueClassCode();
 
@@ -433,9 +457,16 @@ async function createClassCode(){
     New Class Code Created:<br>
     <span style="font-size:2rem;color:var(--correct);font-family:'Fredoka One'">${code}</span><br>
     Teacher: ${teacherName}<br>
-    Period: ${period}<br>
-    Give this code to your students.
+    Period: ${period}
   `;
+
+  teacherSessionCodes.push({
+    code: code,
+    teacher: teacherName,
+    period: period
+  });
+
+  renderTeacherSessionCodes();
 }
 window.addEventListener('load',loadStudentInfo);
 </script></body></html>
