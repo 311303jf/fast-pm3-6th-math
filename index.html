@@ -228,11 +228,7 @@ function saveStudentInfo(){
 
   return true;
 }
-  studentInfo={studentName:name, studentId:sid, classPeriod:period};
-  localStorage.setItem('fastPM3StudentInfo', JSON.stringify(studentInfo));
-  if(status){ status.style.color='var(--correct)'; status.textContent='Student information ready. You may start the practice.'; }
-  return true;
-}
+  
 function requireStudentInfo(){
   return saveStudentInfo();
 }
@@ -275,7 +271,7 @@ function loadStudentInfo(){
     }
   }
 }
-}
+
 function clearStudentInfo(){
   studentInfo = {};
   localStorage.removeItem('fastPM3StudentInfo');
