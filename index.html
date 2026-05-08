@@ -47,8 +47,10 @@ Created by Joany Figueredo · Math Teacher · Miami-Dade County Public Schools
 
       <div class="student-grid">
         <input id="teacherName" placeholder="Teacher Name">
-        <input id="teacherPeriod" placeholder="Period">
-        <input id="teacherClassName" placeholder="Class Name Optional">
+        <div style="display:flex;align-items:center;gap:8px">
+  <span style="font-weight:700;color:white">Period-</span>
+  <input id="teacherPeriod" placeholder="Number Only">
+</div>        
       </div>
 
       <div class="student-actions">
@@ -386,8 +388,12 @@ async function createClassCode(){
   const status = document.getElementById('classCodeStatus');
 
   const teacherName = (document.getElementById('teacherName')?.value || '').trim();
-  const period = (document.getElementById('teacherPeriod')?.value || '').trim();
-  const className = (document.getElementById('teacherClassName')?.value || '').trim();
+  const periodNumber = (
+  document.getElementById('teacherPeriod')?.value || ''
+).trim();
+
+const period = `Period-${periodNumber}`;
+  
 
   if(!teacherName || !period){
     status.className = 'save-status bad';
@@ -441,7 +447,7 @@ async function createClassCode(){
       class_code: code,
       teacher_name: teacherName,
       period: period,
-      class_name: className || null,
+      class_name: null,
       active: true
     }]);
 
